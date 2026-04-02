@@ -1,0 +1,563 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		A9DDCB082F7E2A94000D0B38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A9DDCAEF2F7E2A92000D0B38 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A9DDCAF62F7E2A92000D0B38;
+			remoteInfo = FilmRoll;
+		};
+		A9DDCB122F7E2A94000D0B38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A9DDCAEF2F7E2A92000D0B38 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A9DDCAF62F7E2A92000D0B38;
+			remoteInfo = FilmRoll;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A9DDCAF72F7E2A92000D0B38 /* FilmRoll.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FilmRoll.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9DDCB072F7E2A94000D0B38 /* FilmRollTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FilmRollTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9DDCB112F7E2A94000D0B38 /* FilmRollUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FilmRollUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A9DDCAF92F7E2A92000D0B38 /* FilmRoll */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FilmRoll;
+			sourceTree = "<group>";
+		};
+		A9DDCB0A2F7E2A94000D0B38 /* FilmRollTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FilmRollTests;
+			sourceTree = "<group>";
+		};
+		A9DDCB142F7E2A94000D0B38 /* FilmRollUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FilmRollUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A9DDCAF42F7E2A92000D0B38 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DDCB042F7E2A94000D0B38 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DDCB0E2F7E2A94000D0B38 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A9DDCAEE2F7E2A92000D0B38 = {
+			isa = PBXGroup;
+			children = (
+				A9DDCAF92F7E2A92000D0B38 /* FilmRoll */,
+				A9DDCB0A2F7E2A94000D0B38 /* FilmRollTests */,
+				A9DDCB142F7E2A94000D0B38 /* FilmRollUITests */,
+				A9DDCAF82F7E2A92000D0B38 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A9DDCAF82F7E2A92000D0B38 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A9DDCAF72F7E2A92000D0B38 /* FilmRoll.app */,
+				A9DDCB072F7E2A94000D0B38 /* FilmRollTests.xctest */,
+				A9DDCB112F7E2A94000D0B38 /* FilmRollUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A9DDCAF62F7E2A92000D0B38 /* FilmRoll */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9DDCB1B2F7E2A94000D0B38 /* Build configuration list for PBXNativeTarget "FilmRoll" */;
+			buildPhases = (
+				A9DDCAF32F7E2A92000D0B38 /* Sources */,
+				A9DDCAF42F7E2A92000D0B38 /* Frameworks */,
+				A9DDCAF52F7E2A92000D0B38 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A9DDCAF92F7E2A92000D0B38 /* FilmRoll */,
+			);
+			name = FilmRoll;
+			packageProductDependencies = (
+			);
+			productName = FilmRoll;
+			productReference = A9DDCAF72F7E2A92000D0B38 /* FilmRoll.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A9DDCB062F7E2A94000D0B38 /* FilmRollTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9DDCB1E2F7E2A94000D0B38 /* Build configuration list for PBXNativeTarget "FilmRollTests" */;
+			buildPhases = (
+				A9DDCB032F7E2A94000D0B38 /* Sources */,
+				A9DDCB042F7E2A94000D0B38 /* Frameworks */,
+				A9DDCB052F7E2A94000D0B38 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A9DDCB092F7E2A94000D0B38 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A9DDCB0A2F7E2A94000D0B38 /* FilmRollTests */,
+			);
+			name = FilmRollTests;
+			packageProductDependencies = (
+			);
+			productName = FilmRollTests;
+			productReference = A9DDCB072F7E2A94000D0B38 /* FilmRollTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A9DDCB102F7E2A94000D0B38 /* FilmRollUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9DDCB212F7E2A94000D0B38 /* Build configuration list for PBXNativeTarget "FilmRollUITests" */;
+			buildPhases = (
+				A9DDCB0D2F7E2A94000D0B38 /* Sources */,
+				A9DDCB0E2F7E2A94000D0B38 /* Frameworks */,
+				A9DDCB0F2F7E2A94000D0B38 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A9DDCB132F7E2A94000D0B38 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A9DDCB142F7E2A94000D0B38 /* FilmRollUITests */,
+			);
+			name = FilmRollUITests;
+			packageProductDependencies = (
+			);
+			productName = FilmRollUITests;
+			productReference = A9DDCB112F7E2A94000D0B38 /* FilmRollUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A9DDCAEF2F7E2A92000D0B38 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					A9DDCAF62F7E2A92000D0B38 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					A9DDCB062F7E2A94000D0B38 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = A9DDCAF62F7E2A92000D0B38;
+					};
+					A9DDCB102F7E2A94000D0B38 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = A9DDCAF62F7E2A92000D0B38;
+					};
+				};
+			};
+			buildConfigurationList = A9DDCAF22F7E2A92000D0B38 /* Build configuration list for PBXProject "FilmRoll" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A9DDCAEE2F7E2A92000D0B38;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A9DDCAF82F7E2A92000D0B38 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A9DDCAF62F7E2A92000D0B38 /* FilmRoll */,
+				A9DDCB062F7E2A94000D0B38 /* FilmRollTests */,
+				A9DDCB102F7E2A94000D0B38 /* FilmRollUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A9DDCAF52F7E2A92000D0B38 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DDCB052F7E2A94000D0B38 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DDCB0F2F7E2A94000D0B38 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A9DDCAF32F7E2A92000D0B38 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DDCB032F7E2A94000D0B38 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A9DDCB0D2F7E2A94000D0B38 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A9DDCB092F7E2A94000D0B38 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A9DDCAF62F7E2A92000D0B38 /* FilmRoll */;
+			targetProxy = A9DDCB082F7E2A94000D0B38 /* PBXContainerItemProxy */;
+		};
+		A9DDCB132F7E2A94000D0B38 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A9DDCAF62F7E2A92000D0B38 /* FilmRoll */;
+			targetProxy = A9DDCB122F7E2A94000D0B38 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A9DDCB192F7E2A94000D0B38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A9DDCB1A2F7E2A94000D0B38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A9DDCB1C2F7E2A94000D0B38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"FilmRoll/Preview Content\"";
+				DEVELOPMENT_TEAM = 89KZLFUW5B;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mingjam.FilmRoll;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A9DDCB1D2F7E2A94000D0B38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"FilmRoll/Preview Content\"";
+				DEVELOPMENT_TEAM = 89KZLFUW5B;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mingjam.FilmRoll;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A9DDCB1F2F7E2A94000D0B38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 89KZLFUW5B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mingjam.FilmRollTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FilmRoll.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FilmRoll";
+			};
+			name = Debug;
+		};
+		A9DDCB202F7E2A94000D0B38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 89KZLFUW5B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mingjam.FilmRollTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FilmRoll.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FilmRoll";
+			};
+			name = Release;
+		};
+		A9DDCB222F7E2A94000D0B38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 89KZLFUW5B;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mingjam.FilmRollUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FilmRoll;
+			};
+			name = Debug;
+		};
+		A9DDCB232F7E2A94000D0B38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 89KZLFUW5B;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mingjam.FilmRollUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FilmRoll;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A9DDCAF22F7E2A92000D0B38 /* Build configuration list for PBXProject "FilmRoll" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DDCB192F7E2A94000D0B38 /* Debug */,
+				A9DDCB1A2F7E2A94000D0B38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A9DDCB1B2F7E2A94000D0B38 /* Build configuration list for PBXNativeTarget "FilmRoll" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DDCB1C2F7E2A94000D0B38 /* Debug */,
+				A9DDCB1D2F7E2A94000D0B38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A9DDCB1E2F7E2A94000D0B38 /* Build configuration list for PBXNativeTarget "FilmRollTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DDCB1F2F7E2A94000D0B38 /* Debug */,
+				A9DDCB202F7E2A94000D0B38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A9DDCB212F7E2A94000D0B38 /* Build configuration list for PBXNativeTarget "FilmRollUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9DDCB222F7E2A94000D0B38 /* Debug */,
+				A9DDCB232F7E2A94000D0B38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A9DDCAEF2F7E2A92000D0B38 /* Project object */;
+}
