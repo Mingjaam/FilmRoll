@@ -2,15 +2,17 @@ import AVFoundation
 import UIKit
 import SwiftUI
 import Combine
+import AudioToolbox
 
 @MainActor
 class CameraManager: NSObject, ObservableObject {
     @Published var previewLayer: AVCaptureVideoPreviewLayer?
     @Published var capturedImage: UIImage?
     @Published var isCapturing = false
+    @Published var exposureBias: Float = 0
 
-    private let session = AVCaptureSession()
-    private let output = AVCapturePhotoOutput()
+    nonisolated(unsafe) private let session = AVCaptureSession()
+    nonisolated(unsafe) private let output = AVCapturePhotoOutput()
     private var continuation: CheckedContinuation<UIImage?, Never>?
 
     override init() {
@@ -75,6 +77,27 @@ class CameraManager: NSObject, ObservableObject {
             let settings = AVCapturePhotoSettings()
             output.capturePhoto(with: settings, delegate: self)
         }
+    }
+
+    // MARK: - Shutter Sound
+
+    func playShutterSound() {
+        // System camera shutter sound (1108)
+        AudioServicesPlaySystemSound(1108)
+    }
+
+    // MARK: - Exposure Bias
+
+    func setExposureBias(_ bias: Float) {
+        guard let input = session.inputs.first as? AVCaptureDeviceInput else { return }
+        let device = input.device
+        do {
+            try device.lockForConfiguration()
+            let clamped = max(device.minExposureTargetBias, min(bias, device.maxExposureTargetBias))
+            device.setExposureTargetBias(clamped, completionHandler: nil)
+            device.unlockForConfiguration()
+            exposureBias = clamped
+        } catch {}
     }
 
     func stop() {

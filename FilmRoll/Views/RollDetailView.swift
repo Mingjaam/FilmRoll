@@ -5,8 +5,12 @@ struct RollDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedFrame: Frame? = nil
-    @State private var showShareSheet = false
-    @State private var exportImage: UIImage? = nil
+    @State private var shareItem: ExportShareItem? = nil
+
+    struct ExportShareItem: Identifiable {
+        let id = UUID()
+        let image: UIImage
+    }
 
     private let columns = [
         GridItem(.flexible(), spacing: 3),
@@ -69,27 +73,30 @@ struct RollDetailView: View {
         .sheet(item: $selectedFrame) { frame in
             FrameDetailView(frame: frame, filmStock: roll.filmStock)
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let image = exportImage {
-                ShareSheet(items: [image])
-            }
+        .sheet(item: $shareItem) { item in
+            ShareSheet(items: [item.image])
         }
     }
 
     // MARK: - Export
 
     private func exportRoll() {
+        let exportW: CGFloat = 393
+        // 각 row 높이: 퍼포레이션(22) + 프레임(73) + 번호행(20) + 퍼포레이션(22) = 137
+        let rowCount = max(1, (roll.sortedFrames.count + 3) / 4)
+        let exportH: CGFloat = 50 + CGFloat(rowCount) * 137
+
         let renderer = ImageRenderer(
             content: FilmExportView(roll: roll)
-                .frame(width: 393)
+                .frame(width: exportW, height: exportH)
                 .background(Color(hex: "#111111"))
+                .environment(\.colorScheme, .dark)
         )
         renderer.scale = 3.0
-        renderer.proposedSize = .init(width: 393, height: nil)
+        renderer.proposedSize = ProposedViewSize(width: exportW, height: exportH)
 
         if let image = renderer.uiImage {
-            exportImage = image
-            showShareSheet = true
+            shareItem = ExportShareItem(image: image)
         }
     }
 

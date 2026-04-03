@@ -45,8 +45,6 @@ struct FilmStockCard: View {
     let stock: FilmStock
     let onTap: () -> Void
 
-    @State private var isPressed = false
-
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 0) {
@@ -127,12 +125,16 @@ struct FilmStockCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.white.opacity(0.07), lineWidth: 1)
         )
-        .scaleEffect(isPressed ? 0.97 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
-        )
+        .buttonStyle(FilmCardButtonStyle())
+    }
+}
+
+// MARK: - Button Style (ScrollView와 제스처 충돌 없이 press 애니메이션)
+
+private struct FilmCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }

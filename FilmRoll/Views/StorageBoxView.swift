@@ -4,6 +4,7 @@ import SwiftData
 struct StorageBoxView: View {
     @Query(sort: \Roll.number, order: .reverse) private var rolls: [Roll]
     @State private var selectedRoll: Roll?
+    @State private var showCalendar = false
 
     var completedRolls: [Roll] {
         rolls.filter { $0.isComplete }
@@ -14,26 +15,41 @@ struct StorageBoxView: View {
             ZStack {
                 Color(hex: "#111111").ignoresSafeArea()
 
-                if completedRolls.isEmpty {
-                    emptyState
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
-                            // 헤더
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("MY FILM BOX")
-                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                VStack(spacing: 0) {
+                    // 항상 표시되는 헤더
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("MY FILM BOX")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(Color(hex: "#C8762A").opacity(0.7))
+                                .tracking(3)
+                            Text("\(completedRolls.count) Rolls · \(completedRolls.reduce(0) { $0 + $1.frameCount }) Frames")
+                                .font(.system(size: 22, weight: .light))
+                                .foregroundColor(.white)
+                        }
+                        Spacer()
+                        Button(action: { showCalendar = true }) {
+                            VStack(spacing: 2) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 16))
                                     .foregroundColor(Color(hex: "#C8762A").opacity(0.7))
-                                    .tracking(3)
-
-                                Text("\(completedRolls.count) Rolls · \(completedRolls.reduce(0) { $0 + $1.frameCount }) Frames")
-                                    .font(.system(size: 22, weight: .light))
-                                    .foregroundColor(.white)
+                                Text("LOG")
+                                    .font(.system(size: 7, design: .monospaced))
+                                    .foregroundColor(Color(hex: "#C8762A").opacity(0.4))
+                                    .tracking(1)
                             }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 16)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
 
-                            // 캐니스터 그리드
+                    if completedRolls.isEmpty {
+                        Spacer()
+                        emptyState
+                        Spacer()
+                    } else {
+                        ScrollView {
                             LazyVGrid(columns: [
                                 GridItem(.flexible()),
                                 GridItem(.flexible()),
@@ -45,14 +61,18 @@ struct StorageBoxView: View {
                                 }
                             }
                             .padding(.horizontal, 24)
+                            .padding(.top, 16)
+                            .padding(.bottom, 40)
                         }
-                        .padding(.bottom, 40)
                     }
                 }
             }
             .navigationBarHidden(true)
             .sheet(item: $selectedRoll) { roll in
                 RollDetailView(roll: roll)
+            }
+            .sheet(isPresented: $showCalendar) {
+                CalendarView()
             }
         }
     }

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import AVFoundation
 import UIKit
+import WidgetKit
 
 struct MainView: View {
     @Environment(\.modelContext) private var context
@@ -13,9 +14,12 @@ struct MainView: View {
     @State private var isCapturing = false
     @State private var showStorage = false
     @State private var showFilmPicker = false
+    @State private var showEjectConfirm = false
     @State private var completedRollNumber = 1
     @State private var completedFilmName = ""
     @State private var completedFrameCount = 36
+    @State private var isDraggingExposure = false
+    @State private var exposureBaseValue: Float = 0
 
     private var activeRoll: Roll? {
         rolls.first(where: { !$0.isComplete })
@@ -78,6 +82,18 @@ struct MainView: View {
                 }
             }
         }
+        .alert("필름을 꺼내시겠어요?", isPresented: $showEjectConfirm, presenting: activeRoll) { roll in
+            Button("계속 찍기", role: .cancel) { }
+            Button("꺼내버리기", role: .destructive) {
+                ejectRoll(roll)
+            }
+        } message: { roll in
+            if roll.frameCount > 0 {
+                Text("카메라를 열면 이미 담긴 \(roll.frameCount)장의 순간이 빛에 녹아 사라져요.\n한번 노출되면 되돌릴 수 없어요.")
+            } else {
+                Text("아직 찍은 건 없어요.\n다른 필름으로 교체할까요?")
+            }
+        }
         .sheet(isPresented: $showStorage) {
             StorageBoxView()
         }
@@ -92,6 +108,25 @@ struct MainView: View {
                 showFilmPicker = true
             }
         }
+    }
+
+    // MARK: - Widget Data
+
+    private func saveWidgetData(roll: Roll) {
+        let defaults = UserDefaults(suiteName: "group.com.filmroll")
+        defaults?.set(roll.number,                      forKey: "filmroll.rollNumber")
+        defaults?.set(roll.filmStock.name,              forKey: "filmroll.filmName")
+        defaults?.set(roll.filmStock.canisterHex,       forKey: "filmroll.canisterHex")
+        defaults?.set(roll.frameCount,                  forKey: "filmroll.frameCount")
+        defaults?.set(roll.filmStock.frameCount,        forKey: "filmroll.totalFrames")
+        defaults?.set(Date().timeIntervalSince1970,     forKey: "filmroll.lastCapture")
+    }
+
+    // MARK: - Eject Roll
+
+    private func ejectRoll(_ roll: Roll) {
+        context.delete(roll)
+        showFilmPicker = true
     }
 
     // MARK: - Load Film
@@ -109,11 +144,19 @@ struct MainView: View {
     private func headerView(roll: Roll) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                // 필름 이름
-                Text(roll.filmStock.name.uppercased())
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundColor(Color(hex: roll.filmStock.canisterHex).opacity(0.8))
-                    .tracking(3)
+                // 필름 이름 + 교체 버튼
+                Button(action: { showEjectConfirm = true }) {
+                    HStack(spacing: 5) {
+                        Text(roll.filmStock.name.uppercased())
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundColor(Color(hex: roll.filmStock.canisterHex).opacity(0.8))
+                            .tracking(3)
+
+                        Image(systemName: "arrow.2.squarepath")
+                            .font(.system(size: 8))
+                            .foregroundColor(Color(hex: roll.filmStock.canisterHex).opacity(0.4))
+                    }
+                }
 
                 Text("ROLL \(String(format: "%02d", roll.number))")
                     .font(.system(size: 10, weight: .light, design: .monospaced))
@@ -170,32 +213,64 @@ struct MainView: View {
                     ScrollViewReader { proxy in
                         ScrollView(.horizontal, showsIndicators: false) {
                             LazyHStack(spacing: 3) {
-                                Spacer().frame(width: (geo.size.width - frameWidth) / 2)
-
                                 ForEach(Array(roll.sortedFrames.enumerated()), id: \.element.id) { i, frame in
                                     FrameView(frame: frame, index: i, isCurrent: false, filmStock: roll.filmStock)
                                         .frame(width: frameWidth, height: frameHeight)
                                         .id("frame_\(i)")
                                 }
 
-                                // 카메라 프리뷰
+                                // 카메라 프리뷰 (라이브 필터 적용)
                                 ZStack {
                                     CameraPreviewView(manager: camera)
                                         .frame(width: frameWidth, height: frameHeight)
                                         .clipShape(RoundedRectangle(cornerRadius: 1))
+                                        .applyFilmGrading(roll.filmStock)
                                     FilmGrainView()
                                         .frame(width: frameWidth, height: frameHeight)
+
+                                    // 노출 보정: 왼쪽 전용 드래그 스트립
+                                    HStack(spacing: 0) {
+                                        VStack(spacing: 5) {
+                                            Spacer()
+                                            if isDraggingExposure || abs(camera.exposureBias) > 0.05 {
+                                                Text(String(format: "%+.1f", camera.exposureBias))
+                                                    .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                                                    .foregroundColor(Color(hex: "#C8762A"))
+                                            }
+                                            Image(systemName: "sun.max")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(isDraggingExposure
+                                                    ? Color(hex: "#C8762A")
+                                                    : .white.opacity(0.25))
+                                            Spacer()
+                                        }
+                                        .frame(width: 30)
+                                        .contentShape(Rectangle())
+                                        .gesture(
+                                            DragGesture(minimumDistance: 5, coordinateSpace: .local)
+                                                .onChanged { value in
+                                                    if !isDraggingExposure {
+                                                        isDraggingExposure = true
+                                                        exposureBaseValue = camera.exposureBias
+                                                    }
+                                                    let delta = Float(-value.translation.height) / 120.0
+                                                    camera.setExposureBias(exposureBaseValue + delta * 2.5)
+                                                }
+                                                .onEnded { _ in isDraggingExposure = false }
+                                        )
+                                        Spacer()
+                                    }
                                 }
                                 .id("camera")
 
                                 FrameView(frame: nil, index: roll.frameCount + 1, isCurrent: false)
                                     .frame(width: frameWidth, height: frameHeight)
                                     .opacity(0.5)
-
-                                Spacer().frame(width: (geo.size.width - frameWidth) / 2)
                             }
                             .scrollTargetLayout()
                         }
+                        // Spacer 대신 contentMargins — snap 정확도 향상
+                        .contentMargins(.horizontal, (geo.size.width - frameWidth) / 2, for: .scrollContent)
                         .scrollTargetBehavior(.viewAligned)
                         .onChange(of: roll.frameCount) { _, _ in
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
@@ -240,6 +315,7 @@ struct MainView: View {
 
         let impact = UIImpactFeedbackGenerator(style: .heavy)
         impact.impactOccurred()
+        camera.playShutterSound()
 
         withAnimation(.easeOut(duration: 0.08)) { showFlash = true }
         try? await Task.sleep(for: .milliseconds(120))
@@ -264,6 +340,10 @@ struct MainView: View {
         notify.notificationOccurred(.success)
 
         isCapturing = false
+
+        // 위젯 데이터 업데이트
+        saveWidgetData(roll: roll)
+        WidgetCenter.shared.reloadTimelines(ofKind: "filmroll_widget")
 
         if roll.isFull {
             roll.isComplete = true

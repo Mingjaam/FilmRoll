@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct FilmRollApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
         }
+        .modelContainer(for: [Roll.self, Frame.self])
     }
 }

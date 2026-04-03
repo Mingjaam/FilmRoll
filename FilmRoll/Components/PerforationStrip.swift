@@ -11,7 +11,7 @@ struct PerforationStrip: View {
     var body: some View {
         ZStack(alignment: .leading) {
             Rectangle()
-                .fill(Color(hex: "#1C1209"))
+                .fill(Color(hex: "#241810"))
                 .frame(height: stripHeight)
 
             // 구멍들
