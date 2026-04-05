@@ -589,6 +589,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "오늘의 순간을 필름에 담기 위해 카메라를 사용합니다";
+				INFOPLIST_KEY_NSMainCameraUsageDescription = "오늘의 순간을 필름에 담기 위해 카메라를 사용합니다";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "필름의 사진을 갤러리에 저장하기 위해 권한이 필요합니다";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -620,6 +623,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "오늘의 순간을 필름에 담기 위해 카메라를 사용합니다";
+				INFOPLIST_KEY_NSMainCameraUsageDescription = "오늘의 순간을 필름에 담기 위해 카메라를 사용합니다";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "필름의 사진을 갤러리에 저장하기 위해 권한이 필요합니다";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -1,17 +1,16 @@
 import SwiftUI
-import AudioToolbox
 
 struct RollCompleteView: View {
     let rollNumber: Int
     let filmName: String
     let frameCount: Int
+    let filmStock: FilmStock
     let onDismiss: () -> Void
+    let onGoHome: () -> Void
 
     @State private var opacity: Double = 0
-    @State private var canisterScale: CGFloat = 0.3
-    @State private var titleOffset: CGFloat = 30
-    @State private var rewindRotation: Double = 0
-    @State private var rewindOpacity: Double = 1
+    @State private var canisterScale: CGFloat = 0.7
+    @State private var titleOffset: CGFloat = 24
 
     var body: some View {
         ZStack {
@@ -19,10 +18,21 @@ struct RollCompleteView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 32) {
-                // 캐니스터 아이콘 (되감기 때 회전)
+                // 캐니스터
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "#C8762A"))
+                        .fill(filmStock.dimmedCanisterColor)
+                        .frame(width: 64, height: 80)
+
+                    // 하이라이트
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [.white.opacity(0.18), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .frame(width: 64, height: 80)
 
                     VStack(spacing: 4) {
@@ -36,9 +46,16 @@ struct RollCompleteView: View {
                             .fill(Color(hex: "#1C1209").opacity(0.5))
                             .frame(width: 40, height: 6)
                     }
+
+                    // 상단 캡
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(filmStock.dimmedCanisterColor)
+                        .brightness(0.15)
+                        .frame(width: 30, height: 10)
+                        .offset(y: -42)
                 }
-                .rotationEffect(.degrees(rewindRotation))
                 .scaleEffect(canisterScale)
+                .shadow(color: filmStock.dimmedCanisterColor.opacity(0.4), radius: 20, x: 0, y: 8)
 
                 VStack(spacing: 8) {
                     Text("ROLL \(String(format: "%02d", rollNumber))  ·  \(filmName.uppercased())")
@@ -47,70 +64,60 @@ struct RollCompleteView: View {
                         .tracking(3)
 
                     Text("COMPLETE")
-                        .font(.system(size: 28, weight: .light, design: .monospaced))
+                        .font(.system(size: 28, weight: .ultraLight, design: .monospaced))
                         .foregroundColor(.white)
+                        .tracking(4)
 
                     Text("\(frameCount) frames developed")
-                        .font(.system(size: 12, weight: .regular, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.4))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.35))
                 }
                 .offset(y: titleOffset)
 
-                Button(action: onDismiss) {
-                    Text("LOAD NEW FILM")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .tracking(2)
-                        .foregroundColor(Color(hex: "#1C1209"))
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 12)
-                        .background(Color(hex: "#C8762A"))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                VStack(spacing: 10) {
+                    Button(action: onDismiss) {
+                        Text("LOAD NEW FILM")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .tracking(2)
+                            .foregroundColor(Color(hex: "#1C1209"))
+                            .padding(.horizontal, 28)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color(hex: "#C8762A"))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+
+                    Button(action: onGoHome) {
+                        Text("GO TO HOME")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .tracking(2)
+                            .foregroundColor(.white.opacity(0.5))
+                            .padding(.horizontal, 28)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
                 }
+                .padding(.horizontal, 32)
                 .offset(y: titleOffset)
             }
         }
         .opacity(opacity)
         .onAppear {
-            // 되감기 페이즈 먼저 실행
-            Task { await playRewindSequence() }
+            Task { await playAppearSequence() }
         }
     }
 
-    // MARK: - Rewind Animation Sequence
-
-    private func playRewindSequence() async {
-        // 캐니스터 즉시 표시
-        withAnimation(.easeOut(duration: 0.15)) { opacity = 1; canisterScale = 0.9 }
-
-        // 되감기 시작: 빠르게 회전
-        withAnimation(.linear(duration: 1.0)) {
-            rewindRotation = 900  // 2.5바퀴
-        }
-
-        // 연속 진동으로 필름 되감기 느낌
-        let light = UIImpactFeedbackGenerator(style: .light)
-        let rigid = UIImpactFeedbackGenerator(style: .rigid)
-        light.prepare()
-        rigid.prepare()
-
-        for i in 0..<18 {
-            try? await Task.sleep(for: .milliseconds(35 + Int64(i) * 5))
-            if i % 5 == 0 {
-                rigid.impactOccurred(intensity: 0.6)
-            } else {
-                light.impactOccurred(intensity: 0.5)
-            }
-        }
-
-        // 되감기 완료 후 정착 애니메이션
-        try? await Task.sleep(for: .milliseconds(200))
-
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+    private func playAppearSequence() async {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+            opacity = 1
             canisterScale = 1
         }
-        withAnimation(.easeOut(duration: 0.4)) { titleOffset = 0 }
-
-        // 완료 햅틱
+        try? await Task.sleep(for: .milliseconds(200))
+        withAnimation(.easeOut(duration: 0.35)) {
+            titleOffset = 0
+        }
         try? await Task.sleep(for: .milliseconds(300))
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }

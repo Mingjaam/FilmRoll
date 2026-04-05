@@ -47,8 +47,6 @@ struct FrameDetailView: View {
                     Image(uiImage: img)
                         .resizable()
                         .scaledToFit()
-                        .applyFilmGrading(filmStock)
-                        .overlay(vignetteOverlay)
                         .padding(.horizontal, 16)
                 } else {
                     Color(hex: "#2B1E0F")
@@ -93,13 +91,4 @@ struct FrameDetailView: View {
         frame.memo = memoText
     }
 
-    private var vignetteOverlay: some View {
-        let opacity = filmStock?.vignetteOpacity ?? 0.1
-        return RadialGradient(
-            gradient: Gradient(colors: [.clear, .clear, Color.black.opacity(opacity * 2)]),
-            center: .center,
-            startRadius: 80,
-            endRadius: 220
-        )
-    }
 }

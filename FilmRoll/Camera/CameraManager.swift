@@ -10,6 +10,8 @@ class CameraManager: NSObject, ObservableObject {
     @Published var capturedImage: UIImage?
     @Published var isCapturing = false
     @Published var exposureBias: Float = 0
+    /// 색감 감도: 0.0 = 원본(필터 없음), 1.0 = 필터 100% 적용
+    @Published var colorIntensity: Float = 1.0
 
     nonisolated(unsafe) private let session = AVCaptureSession()
     nonisolated(unsafe) private let output = AVCapturePhotoOutput()

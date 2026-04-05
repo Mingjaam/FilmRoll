@@ -6,6 +6,8 @@ class Roll {
     var id: UUID
     var number: Int
     var filmStockID: String?   // optional for backward compat with existing data
+    var frameCountLimit: Int   // 필수: 선택한 장수
+    var customCanisterHex: String?
     var startDate: Date
     var endDate: Date?
     var isComplete: Bool
@@ -13,11 +15,11 @@ class Roll {
 
     var filmStock: FilmStock {
         guard let id = filmStockID else { return .solaris }
-        return FilmStock.all.first { $0.id == id } ?? .solaris
+        return FilmStock.all.first(where: { $0.id == id }) ?? .solaris
     }
 
     var frameCount: Int { frames.count }
-    var isFull: Bool { frames.count >= filmStock.frameCount }
+    var isFull: Bool { frames.count >= frameCountLimit }
 
     var dateRangeLabel: String {
         let fmt = DateFormatter()
@@ -33,10 +35,12 @@ class Roll {
         frames.sorted { $0.orderIndex < $1.orderIndex }
     }
 
-    init(number: Int, filmStockID: String = "solaris") {
+    init(number: Int, filmStockID: String, frameCountLimit: Int, customCanisterHex: String? = nil) {
         self.id = UUID()
         self.number = number
         self.filmStockID = filmStockID
+        self.frameCountLimit = frameCountLimit
+        self.customCanisterHex = customCanisterHex
         self.startDate = .now
         self.endDate = nil
         self.isComplete = false

@@ -18,8 +18,14 @@ struct MainView: View {
     @State private var completedRollNumber = 1
     @State private var completedFilmName = ""
     @State private var completedFrameCount = 36
+    @State private var completedFilmStock: FilmStock = FilmStock.all[0]
+    @State private var showHome = false
+    @State private var isProcessingComplete = false
+    @State private var isRollCompleting = false
     @State private var isDraggingExposure = false
     @State private var exposureBaseValue: Float = 0
+    @State private var isDraggingColor = false
+    @State private var colorBaseValue: Float = 1.0
 
     private var activeRoll: Roll? {
         rolls.first(where: { !$0.isComplete })
@@ -30,35 +36,18 @@ struct MainView: View {
             Color(hex: "#111111").ignoresSafeArea()
 
             if let roll = activeRoll {
-                VStack(spacing: 0) {
-                    headerView(roll: roll)
-                    Spacer()
-                    filmStripWithCamera(roll: roll)
-                    Spacer()
-                    RollProgressView(frameCount: roll.frameCount, total: roll.filmStock.frameCount)
-                        .padding(.bottom, 16)
-                    ShutterButton(isCapturing: isCapturing) {
-                        Task { await capturePhoto(roll: roll) }
-                    }
-                    .padding(.bottom, 48)
-                }
-            } else if !showFilmPicker && !showRollComplete {
-                // 필름이 없을 때 빈 상태
-                VStack(spacing: 20) {
-                    Text("NO FILM LOADED")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .foregroundColor(Color(hex: "#C8762A").opacity(0.4))
-                        .tracking(3)
-
-                    Button(action: { showFilmPicker = true }) {
-                        Text("LOAD FILM")
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .tracking(2)
-                            .foregroundColor(Color(hex: "#1C1209"))
-                            .padding(.horizontal, 28)
-                            .padding(.vertical, 12)
-                            .background(Color(hex: "#C8762A"))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                GeometryReader { geo in
+                    VStack(spacing: 0) {
+                        headerView(roll: roll)
+                        Spacer(minLength: 0)
+                        filmStripWithCamera(roll: roll, availableWidth: geo.size.width)
+                        Spacer(minLength: 0)
+                        RollProgressView(frameCount: roll.frameCount, total: roll.frameCountLimit)
+                            .padding(.bottom, 12)
+                        ShutterButton(isCapturing: isCapturing) {
+                            Task { await capturePhoto(roll: roll) }
+                        }
+                        .padding(.bottom, 32)
                     }
                 }
             }
@@ -70,15 +59,36 @@ struct MainView: View {
                     .allowsHitTesting(false)
             }
 
+            // 롤 완성 처리 중 로딩 화면
+            if isProcessingComplete {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .tint(Color(hex: "#C8762A"))
+                            .scaleEffect(1.2)
+                        Text("DEVELOPING...")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundColor(Color(hex: "#C8762A").opacity(0.5))
+                            .tracking(3)
+                    }
+                }
+                .transition(.opacity)
+            }
+
             // 롤 완성 오버레이
             if showRollComplete {
                 RollCompleteView(
                     rollNumber: completedRollNumber,
                     filmName: completedFilmName,
-                    frameCount: completedFrameCount
+                    frameCount: completedFrameCount,
+                    filmStock: completedFilmStock
                 ) {
                     showRollComplete = false
                     showFilmPicker = true
+                } onGoHome: {
+                    showRollComplete = false
+                    showHome = true
                 }
             }
         }
@@ -97,15 +107,23 @@ struct MainView: View {
         .sheet(isPresented: $showStorage) {
             StorageBoxView()
         }
-        .sheet(isPresented: $showFilmPicker) {
-            FilmPickerView { stock in
-                loadFilm(stock)
+        .sheet(isPresented: $showFilmPicker, onDismiss: {
+            // 필름을 선택하지 않고 시트를 닫으면 홈으로 이동
+            if activeRoll == nil && !showRollComplete && !isRollCompleting {
+                showHome = true
+            }
+        }) {
+            FilmPickerView { stock, frameCount in
+                loadFilm(stock, frameCount: frameCount)
                 showFilmPicker = false
             }
         }
+        .fullScreenCover(isPresented: $showHome) {
+            HomeView()
+        }
         .task {
-            if activeRoll == nil {
-                showFilmPicker = true
+            if activeRoll == nil && !isProcessingComplete && !showRollComplete && !isRollCompleting {
+                showHome = true
             }
         }
     }
@@ -118,7 +136,7 @@ struct MainView: View {
         defaults?.set(roll.filmStock.name,              forKey: "filmroll.filmName")
         defaults?.set(roll.filmStock.canisterHex,       forKey: "filmroll.canisterHex")
         defaults?.set(roll.frameCount,                  forKey: "filmroll.frameCount")
-        defaults?.set(roll.filmStock.frameCount,        forKey: "filmroll.totalFrames")
+        defaults?.set(roll.frameCountLimit,             forKey: "filmroll.totalFrames")
         defaults?.set(Date().timeIntervalSince1970,     forKey: "filmroll.lastCapture")
     }
 
@@ -126,15 +144,16 @@ struct MainView: View {
 
     private func ejectRoll(_ roll: Roll) {
         context.delete(roll)
-        showFilmPicker = true
+        showHome = true
     }
 
     // MARK: - Load Film
 
-    private func loadFilm(_ stock: FilmStock) {
+    private func loadFilm(_ stock: FilmStock, frameCount: Int) {
         let newRoll = Roll(
             number: (rolls.map(\.number).max() ?? 0) + 1,
-            filmStockID: stock.id
+            filmStockID: stock.id,
+            frameCountLimit: frameCount
         )
         context.insert(newRoll)
     }
@@ -149,12 +168,12 @@ struct MainView: View {
                     HStack(spacing: 5) {
                         Text(roll.filmStock.name.uppercased())
                             .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            .foregroundColor(Color(hex: roll.filmStock.canisterHex).opacity(0.8))
+                            .foregroundColor(roll.filmStock.dimmedCanisterColor.opacity(0.8))
                             .tracking(3)
 
                         Image(systemName: "arrow.2.squarepath")
                             .font(.system(size: 8))
-                            .foregroundColor(Color(hex: roll.filmStock.canisterHex).opacity(0.4))
+                            .foregroundColor(roll.filmStock.dimmedCanisterColor.opacity(0.4))
                     }
                 }
 
@@ -194,7 +213,7 @@ struct MainView: View {
 
     // MARK: - Film Strip with Camera
 
-    private func filmStripWithCamera(roll: Roll) -> some View {
+    private func filmStripWithCamera(roll: Roll, availableWidth: CGFloat) -> some View {
         GeometryReader { geo in
             let frameWidth = geo.size.width * 0.78
             let frameHeight = frameWidth * (3.0 / 4.0)
@@ -214,7 +233,7 @@ struct MainView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             LazyHStack(spacing: 3) {
                                 ForEach(Array(roll.sortedFrames.enumerated()), id: \.element.id) { i, frame in
-                                    FrameView(frame: frame, index: i, isCurrent: false, filmStock: roll.filmStock)
+                                    FrameView(frame: frame, index: i, isCurrent: false, filmStock: roll.filmStock, allowFlip: true)
                                         .frame(width: frameWidth, height: frameHeight)
                                         .id("frame_\(i)")
                                 }
@@ -224,12 +243,69 @@ struct MainView: View {
                                     CameraPreviewView(manager: camera)
                                         .frame(width: frameWidth, height: frameHeight)
                                         .clipShape(RoundedRectangle(cornerRadius: 1))
-                                        .applyFilmGrading(roll.filmStock)
+                                        .applyFilmGradingWithIntensity(roll.filmStock, intensity: Double(camera.colorIntensity))
                                     FilmGrainView()
                                         .frame(width: frameWidth, height: frameHeight)
 
-                                    // 노출 보정: 왼쪽 전용 드래그 스트립
+                                    // 필름 이름 + 날짜/시간 스탬프
+                                    VStack {
+                                        Spacer()
+                                        HStack(alignment: .bottom) {
+                                            Text(roll.filmStock.name.uppercased())
+                                                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                                                .foregroundColor(Color(hex: "#E8670A"))
+                                                .opacity(0.85)
+                                            Spacer()
+                                            VStack(alignment: .trailing, spacing: 1) {
+                                                Text(Date.now.stampDate)
+                                                Text(Date.now.stampTime)
+                                                    .opacity(0.7)
+                                            }
+                                            .font(.system(size: 9, weight: .regular, design: .monospaced))
+                                            .foregroundColor(Color(hex: "#E8670A"))
+                                            .opacity(0.85)
+                                        }
+                                        .padding(.bottom, 6)
+                                        .padding(.horizontal, 8)
+                                    }
+
+                                    // 왼쪽: 색감 감도 / 오른쪽: 노출 보정
                                     HStack(spacing: 0) {
+                                        // 왼쪽 — 색감 감도 (droplet 아이콘)
+                                        VStack(spacing: 5) {
+                                            Spacer()
+                                            if isDraggingColor || camera.colorIntensity < 0.95 {
+                                                Text(String(format: "%.1f", camera.colorIntensity))
+                                                    .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                                                    .foregroundColor(Color(hex: "#4AB8C8"))
+                                            }
+                                            Image(systemName: "drop.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(isDraggingColor
+                                                    ? Color(hex: "#4AB8C8")
+                                                    : .white.opacity(0.25))
+                                            Spacer()
+                                        }
+                                        .frame(width: 30)
+                                        .contentShape(Rectangle())
+                                        .gesture(
+                                            DragGesture(minimumDistance: 5, coordinateSpace: .local)
+                                                .onChanged { value in
+                                                    if !isDraggingColor {
+                                                        isDraggingColor = true
+                                                        colorBaseValue = camera.colorIntensity
+                                                    }
+                                                    let delta = Float(-value.translation.height) / 120.0
+                                                    // 범위: 0.0(원본) ~ 1.0(필터 100%)
+                                                    let newVal = max(0.0, min(1.0, colorBaseValue + delta * 1.2))
+                                                    camera.colorIntensity = newVal
+                                                }
+                                                .onEnded { _ in isDraggingColor = false }
+                                        )
+
+                                        Spacer()
+
+                                        // 오른쪽 — 노출 보정 (sun 아이콘)
                                         VStack(spacing: 5) {
                                             Spacer()
                                             if isDraggingExposure || abs(camera.exposureBias) > 0.05 {
@@ -258,7 +334,6 @@ struct MainView: View {
                                                 }
                                                 .onEnded { _ in isDraggingExposure = false }
                                         )
-                                        Spacer()
                                     }
                                 }
                                 .id("camera")
@@ -304,7 +379,7 @@ struct MainView: View {
             .shadow(color: .black.opacity(0.75), radius: 18, x: 0, y: 10)
             .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: -4)
         }
-        .frame(height: UIScreen.main.bounds.width * 0.78 * 0.75 + 52 + 18)
+        .frame(height: availableWidth * 0.78 * 0.75 + 52 + 18)
     }
 
     // MARK: - Capture
@@ -328,7 +403,12 @@ struct MainView: View {
 
         try? await Task.sleep(for: .milliseconds(300))
 
-        let compressed = image.jpegData(compressionQuality: 0.82)
+        let colorIntensity = camera.colorIntensity
+        let filmStock = roll.filmStock
+        let cropped = image.croppedTo4x3()
+        // SwiftUI ImageRenderer로 색감 굽기 — 카메라 프리뷰와 동일한 결과 보장
+        let graded = cropped.applyGrading(stock: filmStock, colorIntensity: colorIntensity)
+        let compressed = graded.jpegData(compressionQuality: 0.82)
         let frame = Frame(
             imageData: compressed,
             capturedAt: .now,
@@ -346,13 +426,20 @@ struct MainView: View {
         WidgetCenter.shared.reloadTimelines(ofKind: "filmroll_widget")
 
         if roll.isFull {
+            isRollCompleting = true
             roll.isComplete = true
             roll.endDate = .now
             completedRollNumber = roll.number
             completedFilmName = roll.filmStock.name
             completedFrameCount = roll.frameCount
-            try? await Task.sleep(for: .milliseconds(800))
+            completedFilmStock = roll.filmStock
+            // 로딩 화면 표시
+            withAnimation(.easeIn(duration: 0.3)) { isProcessingComplete = true }
+            try? await Task.sleep(for: .milliseconds(1200))
+            withAnimation(.easeOut(duration: 0.2)) { isProcessingComplete = false }
+            try? await Task.sleep(for: .milliseconds(200))
             showRollComplete = true
+            isRollCompleting = false
         }
     }
 }
