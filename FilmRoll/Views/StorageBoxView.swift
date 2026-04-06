@@ -5,9 +5,12 @@ struct StorageBoxView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Roll.number, order: .reverse) private var rolls: [Roll]
     @State private var selectedRoll: Roll?
-    @State private var showCalendar = false
+
     @State private var rollToDelete: Roll?
     @State private var showDeleteConfirm = false
+    @State private var isSelecting = false
+    @State private var selectedRolls: Set<UUID> = []
+    @State private var showBulkDeleteConfirm = false
 
     var completedRolls: [Roll] {
         rolls.filter { $0.isComplete }
@@ -31,17 +34,32 @@ struct StorageBoxView: View {
                                 .foregroundColor(.white)
                         }
                         Spacer()
-                        Button(action: { showCalendar = true }) {
-                            VStack(spacing: 2) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(Color(hex: "#C8762A").opacity(0.7))
-                                Text("LOG")
-                                    .font(.system(size: 7, design: .monospaced))
-                                    .foregroundColor(Color(hex: "#C8762A").opacity(0.4))
-                                    .tracking(1)
+
+                        HStack(spacing: 8) {
+                            if isSelecting && !selectedRolls.isEmpty {
+                                Button(action: { showBulkDeleteConfirm = true }) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(Color(hex: "#C8762A").opacity(0.8))
+                                }
+                                .transition(.scale.combined(with: .opacity))
                             }
+
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isSelecting.toggle()
+                                    if !isSelecting { selectedRolls = [] }
+                                }
+                            }) {
+                                Image(systemName: isSelecting ? "checkmark.circle.fill" : "checkmark.circle")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(Color(hex: "#C8762A").opacity(0.8))
+                            }
+
+
                         }
+                        .animation(.easeInOut(duration: 0.2), value: isSelecting)
+                        .animation(.easeInOut(duration: 0.2), value: selectedRolls.isEmpty)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 16)
@@ -59,16 +77,40 @@ struct StorageBoxView: View {
                                 GridItem(.flexible(), spacing: 16)
                             ], spacing: 32) {
                                 ForEach(completedRolls) { roll in
-                                    CanisterView(roll: roll)
-                                        .onTapGesture { selectedRoll = roll }
-                                        .contextMenu {
-                                            Button(role: .destructive) {
-                                                rollToDelete = roll
-                                                showDeleteConfirm = true
-                                            } label: {
-                                                Label("이 롤을 버릴게요", systemImage: "trash")
+                                    ZStack(alignment: .topTrailing) {
+                                        CanisterView(roll: roll)
+                                            .opacity(isSelecting && !selectedRolls.contains(roll.id) ? 0.5 : 1.0)
+                                            .onTapGesture {
+                                                if isSelecting {
+                                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                                        if selectedRolls.contains(roll.id) {
+                                                            selectedRolls.remove(roll.id)
+                                                        } else {
+                                                            selectedRolls.insert(roll.id)
+                                                        }
+                                                    }
+                                                } else {
+                                                    selectedRoll = roll
+                                                }
                                             }
+                                            .contextMenu {
+                                                if !isSelecting {
+                                                    Button(role: .destructive) {
+                                                        rollToDelete = roll
+                                                        showDeleteConfirm = true
+                                                    } label: {
+                                                        Label("이 롤을 버릴게요", systemImage: "trash")
+                                                    }
+                                                }
+                                            }
+
+                                        if isSelecting {
+                                            Image(systemName: selectedRolls.contains(roll.id) ? "checkmark.circle.fill" : "circle")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(selectedRolls.contains(roll.id) ? Color(hex: "#C8762A") : .white.opacity(0.4))
+                                                .padding(2)
                                         }
+                                    }
                                 }
                             }
                             .padding(.horizontal, 24)
@@ -82,9 +124,6 @@ struct StorageBoxView: View {
             .sheet(item: $selectedRoll) { roll in
                 RollDetailView(roll: roll)
             }
-            .sheet(isPresented: $showCalendar) {
-                CalendarView()
-            }
             .alert("이 필름을 버릴까요?", isPresented: $showDeleteConfirm, presenting: rollToDelete) { roll in
                 Button("아직은 간직할게요", role: .cancel) { }
                 Button("보내줄게요", role: .destructive) {
@@ -92,6 +131,21 @@ struct StorageBoxView: View {
                 }
             } message: { roll in
                 Text("ROLL \(String(format: "%02d", roll.number))에 담긴 \(roll.frameCount)장의 기억이 사라져요.\n한번 떠나면 다시 돌아오지 않아요.")
+            }
+            .alert("선택한 롤을 버릴까요?", isPresented: $showBulkDeleteConfirm) {
+                Button("아직은 간직할게요", role: .cancel) { }
+                Button("\(selectedRolls.count)개의 롤 보내기", role: .destructive) {
+                    let rollsToDelete = completedRolls.filter { selectedRolls.contains($0.id) }
+                    for roll in rollsToDelete {
+                        context.delete(roll)
+                    }
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedRolls = []
+                        isSelecting = false
+                    }
+                }
+            } message: {
+                Text("한번 떠난 순간은 다시 돌아오지 않아요.")
             }
         }
     }
@@ -173,11 +227,19 @@ struct CanisterView: View {
                 .frame(width: 56)
             }
 
+            if let name = roll.customName, !name.isEmpty {
+                Text(name)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
             Text(roll.dateRangeLabel)
                 .font(.system(size: 8, design: .monospaced))
                 .foregroundColor(.white.opacity(0.35))
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
+                .lineLimit(1)
         }
     }
 }

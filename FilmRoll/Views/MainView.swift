@@ -16,6 +16,7 @@ struct MainView: View {
     @State private var showFilmPicker = false
     @State private var showEjectConfirm = false
     @State private var completedRollNumber = 1
+    @State private var completedRollName: String? = nil
     @State private var completedFilmName = ""
     @State private var completedFrameCount = 36
     @State private var completedFilmStock: FilmStock = FilmStock.all[0]
@@ -80,6 +81,7 @@ struct MainView: View {
             if showRollComplete {
                 RollCompleteView(
                     rollNumber: completedRollNumber,
+                    rollName: completedRollName,
                     filmName: completedFilmName,
                     frameCount: completedFrameCount,
                     filmStock: completedFilmStock
@@ -113,8 +115,8 @@ struct MainView: View {
                 showHome = true
             }
         }) {
-            FilmPickerView { stock, frameCount in
-                loadFilm(stock, frameCount: frameCount)
+            FilmPickerView(nextRollNumber: (rolls.map(\.number).max() ?? 0) + 1) { stock, frameCount, name in
+                loadFilm(stock, frameCount: frameCount, name: name)
                 showFilmPicker = false
             }
         }
@@ -149,11 +151,12 @@ struct MainView: View {
 
     // MARK: - Load Film
 
-    private func loadFilm(_ stock: FilmStock, frameCount: Int) {
+    private func loadFilm(_ stock: FilmStock, frameCount: Int, name: String? = nil) {
         let newRoll = Roll(
             number: (rolls.map(\.number).max() ?? 0) + 1,
             filmStockID: stock.id,
-            frameCountLimit: frameCount
+            frameCountLimit: frameCount,
+            customName: name
         )
         context.insert(newRoll)
     }
@@ -405,10 +408,12 @@ struct MainView: View {
 
         let colorIntensity = camera.colorIntensity
         let filmStock = roll.filmStock
-        let cropped = image.croppedTo4x3()
-        // SwiftUI ImageRenderer로 색감 굽기 — 카메라 프리뷰와 동일한 결과 보장
-        let graded = cropped.applyGrading(stock: filmStock, colorIntensity: colorIntensity)
-        let compressed = graded.jpegData(compressionQuality: 0.82)
+        // 백그라운드에서 크롭 + 색감 굽기 — CIFilter GPU 기반으로 메모리 효율적
+        let compressed = await Task.detached(priority: .userInitiated) {
+            let cropped = image.croppedTo4x3()
+            let graded = cropped.applyGrading(stock: filmStock, colorIntensity: colorIntensity)
+            return graded.jpegData(compressionQuality: 0.82)
+        }.value
         let frame = Frame(
             imageData: compressed,
             capturedAt: .now,
@@ -430,6 +435,7 @@ struct MainView: View {
             roll.isComplete = true
             roll.endDate = .now
             completedRollNumber = roll.number
+            completedRollName = roll.customName
             completedFilmName = roll.filmStock.name
             completedFrameCount = roll.frameCount
             completedFilmStock = roll.filmStock

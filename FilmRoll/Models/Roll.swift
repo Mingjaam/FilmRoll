@@ -8,6 +8,7 @@ class Roll {
     var filmStockID: String?   // optional for backward compat with existing data
     var frameCountLimit: Int   // 필수: 선택한 장수
     var customCanisterHex: String?
+    var customName: String?
     var startDate: Date
     var endDate: Date?
     var isComplete: Bool
@@ -35,12 +36,13 @@ class Roll {
         frames.sorted { $0.orderIndex < $1.orderIndex }
     }
 
-    init(number: Int, filmStockID: String, frameCountLimit: Int, customCanisterHex: String? = nil) {
+    init(number: Int, filmStockID: String, frameCountLimit: Int, customCanisterHex: String? = nil, customName: String? = nil) {
         self.id = UUID()
         self.number = number
         self.filmStockID = filmStockID
         self.frameCountLimit = frameCountLimit
         self.customCanisterHex = customCanisterHex
+        self.customName = customName
         self.startDate = .now
         self.endDate = nil
         self.isComplete = false

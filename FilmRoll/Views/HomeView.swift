@@ -48,7 +48,7 @@ struct HomeView: View {
 
                 // 전체 콘텐츠 — 명시적 너비 고정으로 오버플로 방지
                 VStack(spacing: 0) {
-                    Spacer().frame(height: geo.size.height * 0.15)
+                    Spacer().frame(height: geo.size.height * 0.1)
 
                     // 로고 + 앱명 섹션
                     VStack(spacing: 0) {
@@ -88,14 +88,30 @@ struct HomeView: View {
                             .animation(.easeOut(duration: 0.6).delay(0.45), value: contentAppeared)
                     }
 
-                    Spacer().frame(height: 56)
+                    Spacer().frame(height: 28)
+
+                    // 전체 통계
+                    let totalFrames = rolls.reduce(0) { $0 + $1.frames.filter { $0.imageData != nil }.count }
+                    let totalRolls = rolls.filter(\.isComplete).count
+                    HStack(spacing: 0) {
+                        statItem(value: "\(totalRolls)", label: "ROLLS")
+                        Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 28)
+                        statItem(value: "\(totalFrames)", label: "FRAMES")
+                        Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 28)
+                        statItem(value: totalRolls > 0 ? String(format: "%.1f", Double(totalFrames) / Double(totalRolls)) : "—", label: "AVG")
+                    }
+                    .opacity(contentAppeared ? 1 : 0)
+                    .animation(.easeOut(duration: 0.6).delay(0.5), value: contentAppeared)
+                    .padding(.horizontal, 24)
+
+                    Spacer().frame(height: 48)
 
                     // 현재 필름 상태 표시 (있을 때만)
                     if let roll = activeRoll {
                         activeRollBadge(roll: roll)
                             .opacity(contentAppeared ? 1 : 0)
                             .animation(.easeOut(duration: 0.5).delay(0.55), value: contentAppeared)
-                            .padding(.bottom, 24)
+                            .padding(.bottom, 16)
                     }
 
                     // 버튼 섹션
@@ -198,7 +214,7 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 24)
 
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: 16)
 
                     // 하단 감성 문구
                     Text("analog memories in a digital world")
@@ -207,7 +223,7 @@ struct HomeView: View {
                         .tracking(1)
                         .opacity(contentAppeared ? 1 : 0)
                         .animation(.easeOut(duration: 0.6).delay(0.75), value: contentAppeared)
-                        .padding(.bottom, 52)
+                        .padding(.bottom, 40)
                 }
                 .frame(width: geo.size.width)
             }
@@ -230,11 +246,26 @@ struct HomeView: View {
                 navigateToCamera = true
             }
         }) {
-            FilmPickerView { stock, frameCount in
-                loadFilm(stock, frameCount: frameCount)
+            FilmPickerView(nextRollNumber: (rolls.map(\.number).max() ?? 0) + 1) { stock, frameCount, name in
+                loadFilm(stock, frameCount: frameCount, name: name)
                 pendingNavigateToCamera = true
             }
         }
+    }
+
+    // MARK: - Stat Item
+
+    private func statItem(value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 18, weight: .light, design: .monospaced))
+                .foregroundColor(.white.opacity(0.8))
+            Text(label)
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .foregroundColor(.white.opacity(0.25))
+                .tracking(2)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Active Roll Badge
@@ -278,11 +309,12 @@ struct HomeView: View {
 
     // MARK: - Load Film
 
-    private func loadFilm(_ stock: FilmStock, frameCount: Int) {
+    private func loadFilm(_ stock: FilmStock, frameCount: Int, name: String? = nil) {
         let newRoll = Roll(
             number: (rolls.map(\.number).max() ?? 0) + 1,
             filmStockID: stock.id,
-            frameCountLimit: frameCount
+            frameCountLimit: frameCount,
+            customName: name
         )
         context.insert(newRoll)
     }

@@ -1,11 +1,16 @@
 import SwiftUI
 
 struct FilmPickerView: View {
-    let onSelect: (FilmStock, Int) -> Void
+    let nextRollNumber: Int
+    let onSelect: (FilmStock, Int, String?) -> Void
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedStock: FilmStock?
     @State private var selectedFrameCount: Int?
+    @State private var isNaming = false
+    @State private var rollName: String = ""
+    @State private var isLoading = false
+    @FocusState private var nameFieldFocused: Bool
 
     var body: some View {
         ZStack {
@@ -16,6 +21,9 @@ struct FilmPickerView: View {
                     .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
             } else if selectedFrameCount == nil {
                 frameCountSelection
+                    .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+            } else if isNaming {
+                rollNameStep
                     .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
             } else {
                 loadingScreen
@@ -23,7 +31,8 @@ struct FilmPickerView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: selectedStock?.id)
-        .animation(.easeInOut(duration: 0.25), value: selectedFrameCount)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: selectedFrameCount)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: isNaming)
     }
 
     // MARK: - Step 1: Film Stock Selection
@@ -173,9 +182,9 @@ struct FilmPickerView: View {
                     ForEach(FilmStock.availableFrameCounts, id: \.self) { count in
                         FrameCountCard(count: count, stock: stock) {
                             selectedFrameCount = count
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                                onSelect(stock, count)
-                                dismiss()
+                            rollName = "Roll \(String(format: "%02d", nextRollNumber))"
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                isNaming = true
                             }
                         }
                     }
@@ -187,7 +196,108 @@ struct FilmPickerView: View {
         }
     }
 
-    // MARK: - Step 3: Loading
+    // MARK: - Step 3: Roll Name
+
+    private var rollNameStep: some View {
+        VStack(spacing: 0) {
+            // 뒤로
+            HStack {
+                Button(action: {
+                    nameFieldFocused = false
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                        isNaming = false
+                        selectedFrameCount = nil
+                        rollName = "Roll \(String(format: "%02d", nextRollNumber))"
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11, weight: .medium))
+                        Text("장수 선택")
+                            .font(.system(size: 11, design: .monospaced))
+                    }
+                    .foregroundColor(Color(hex: "#C8762A").opacity(0.6))
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 52)
+
+            Spacer()
+
+            if let stock = selectedStock, let count = selectedFrameCount {
+                VStack(spacing: 36) {
+                    // 감성 카피
+                    VStack(spacing: 8) {
+                        Text("ROLL NAME")
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundColor(Color(hex: "#C8762A").opacity(0.5))
+                            .tracking(4)
+
+                        Text("이 롤에 이름을 붙여줄까요")
+                            .font(.system(size: 22, weight: .light))
+                            .foregroundColor(.white.opacity(0.85))
+
+                        Text("나중에도 언제든 바꿀 수 있어요")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.25))
+                    }
+
+                    // 입력 필드
+                    VStack(spacing: 0) {
+                        TextField("", text: $rollName)
+                            .font(.system(size: 24, weight: .light))
+                            .foregroundColor(.white.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .focused($nameFieldFocused)
+                            .submitLabel(.done)
+                            .onSubmit { commitName(stock: stock, count: count) }
+
+                        Rectangle()
+                            .fill(Color(hex: "#C8762A").opacity(nameFieldFocused ? 0.6 : 0.2))
+                            .frame(height: 1)
+                            .animation(.easeInOut(duration: 0.2), value: nameFieldFocused)
+                            .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 40)
+
+                    // 확인 버튼
+                    Button(action: { commitName(stock: stock, count: count) }) {
+                        HStack(spacing: 8) {
+                            Text("필름 장전")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .tracking(1)
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(Color(hex: "#1C1209"))
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
+                        .background(Color(hex: "#C8762A"))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+
+            Spacer()
+            Spacer()
+        }
+    }
+
+    private func commitName(stock: FilmStock, count: Int) {
+        nameFieldFocused = false
+        let name = rollName.trimmingCharacters(in: .whitespaces)
+        isNaming = false
+        isLoading = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            // 비어있으면 nil → Roll 모델에서 "Roll 00" 기본값으로 표시
+            onSelect(stock, count, name.isEmpty ? nil : name)
+            dismiss()
+        }
+    }
+
+    // MARK: - Step 4: Loading
 
     private var loadingScreen: some View {
         VStack(spacing: 24) {
@@ -345,17 +455,19 @@ struct FrameCountCard: View {
         }
     }
 
+    private let accent = Color(hex: "#C8762A")
+
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(count)")
                         .font(.system(size: 36, weight: .light, design: .monospaced))
-                        .foregroundColor(stock.dimmedCanisterColor)
+                        .foregroundColor(accent)
 
                     Text("EXP")
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(stock.dimmedCanisterColor.opacity(0.5))
+                        .foregroundColor(accent.opacity(0.5))
                         .offset(y: -6)
                 }
 
@@ -367,24 +479,24 @@ struct FrameCountCard: View {
                 HStack(spacing: 3) {
                     ForEach(0..<min(count, 8), id: \.self) { _ in
                         RoundedRectangle(cornerRadius: 1)
-                            .fill(stock.dimmedCanisterColor.opacity(0.25))
+                            .fill(accent.opacity(0.25))
                             .frame(width: 6, height: 8)
                     }
                     if count > 8 {
                         Text("···")
                             .font(.system(size: 8))
-                            .foregroundColor(stock.dimmedCanisterColor.opacity(0.3))
+                            .foregroundColor(accent.opacity(0.3))
                     }
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(stock.dimmedCanisterColor.opacity(0.06))
+            .background(accent.opacity(0.06))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(stock.dimmedCanisterColor.opacity(0.2), lineWidth: 1)
+                    .stroke(accent.opacity(0.2), lineWidth: 1)
             )
         }
         .buttonStyle(FrameCountButtonStyle())

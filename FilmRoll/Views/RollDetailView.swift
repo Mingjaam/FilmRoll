@@ -1,5 +1,6 @@
 import SwiftUI
 import Photos
+import ImageIO
 
 // MARK: - Async Frame Image
 
@@ -22,9 +23,19 @@ private struct AsyncFrameImage: View {
         }
         .task(id: data) {
             guard let data else { return }
-            let decoded = await Task.detached(priority: .userInitiated) {
-                UIImage(data: data)
+            let decoded = await Task.detached(priority: .utility) {
+                let options: [CFString: Any] = [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceShouldCacheImmediately: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceThumbnailMaxPixelSize: 300
+                ]
+                guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+                      let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+                else { return UIImage(data: data) }
+                return UIImage(cgImage: cgImage)
             }.value
+            guard !Task.isCancelled else { return }
             image = decoded
         }
     }
@@ -42,6 +53,9 @@ struct RollDetailView: View {
     @State private var selectedFrames: Set<UUID> = []
     @State private var showSaveSheet = false
     @State private var showDeleteConfirm = false
+    @State private var isEditingName = false
+    @State private var editingName: String = ""
+    @FocusState private var nameFieldFocused: Bool
 
     // 3열 그리드
     private let columns = [
@@ -61,73 +75,26 @@ struct RollDetailView: View {
                     let sorted = roll.sortedFrames
                     let rows = sorted.chunked(into: 3)
 
-                    VStack(spacing: 0) {
+                    LazyVStack(spacing: 0) {
                         ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, rowFrames in
                             filmRow(frames: rowFrames, startIndex: rowIndex * 3)
                         }
                     }
-                    .padding(.bottom, isSelecting ? 100 : 40)
+                    .padding(.bottom, 40)
                 }
             }
 
-            // 하단 저장 바
-            if isSelecting && !selectedFrames.isEmpty {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Text("\(selectedFrames.count)장 선택됨")
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.5))
 
-                        Spacer()
-
-                        Button(action: { showDeleteConfirm = true }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 13))
-                                Text("DELETE")
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                    .tracking(1)
-                            }
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(Color.red.opacity(0.25))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.red.opacity(0.4), lineWidth: 1))
-                        }
-
-                        Button(action: { showSaveSheet = true }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "square.and.arrow.down")
-                                    .font(.system(size: 13))
-                                Text("SAVE")
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                    .tracking(1)
-                            }
-                            .foregroundColor(Color(hex: "#1C1209"))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(Color(hex: "#C8762A"))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(
-                        Color(hex: "#0D0906")
-                            .overlay(Rectangle().fill(Color(hex: "#C8762A").opacity(0.15)).frame(height: 1), alignment: .top)
-                    )
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+        }
+        .onTapGesture {
+            if isEditingName { commitEditName() }
         }
         .sheet(item: $selectedFrame) { frame in
             FrameDetailView(frame: frame, filmStock: roll.filmStock)
         }
-        .alert("선택한 사진을 삭제할까요?", isPresented: $showDeleteConfirm) {
-            Button("취소", role: .cancel) { }
-            Button("\(selectedFrames.count)장 삭제", role: .destructive) {
+        .alert("이 순간들을 놓아줄까요?", isPresented: $showDeleteConfirm) {
+            Button("아직은 간직할게요", role: .cancel) { }
+            Button("\(selectedFrames.count)장의 기억 보내기", role: .destructive) {
                 let framesToDelete = roll.frames.filter { selectedFrames.contains($0.id) }
                 for frame in framesToDelete {
                     context.delete(frame)
@@ -138,7 +105,7 @@ struct RollDetailView: View {
                 }
             }
         } message: {
-            Text("삭제된 사진은 복구할 수 없어요.")
+            Text("한번 떠난 순간은 다시 돌아오지 않아요.")
         }
         .sheet(isPresented: $showSaveSheet) {
             let frames = roll.sortedFrames.filter { selectedFrames.contains($0.id) }
@@ -148,6 +115,23 @@ struct RollDetailView: View {
                 selectedFrames = []
             }
         }
+    }
+
+    // MARK: - Name Edit
+
+    private func commitEditName() {
+        nameFieldFocused = false
+        let trimmed = editingName.trimmingCharacters(in: .whitespaces)
+        roll.customName = trimmed.isEmpty ? nil : trimmed
+        withAnimation(.easeInOut(duration: 0.15)) {
+            isEditingName = false
+            editingName = ""
+        }
+    }
+
+    private var displayName: String {
+        if let name = roll.customName, !name.isEmpty { return name }
+        return "Roll \(String(format: "%02d", roll.number))"
     }
 
     // MARK: - Header
@@ -171,27 +155,91 @@ struct RollDetailView: View {
 
             Spacer()
 
-            VStack(spacing: 2) {
+            VStack(spacing: 3) {
                 Text("ROLL \(String(format: "%02d", roll.number))  ·  \(roll.filmStock.name.uppercased())")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(Color(hex: "#C8762A").opacity(0.7))
                     .tracking(2)
+
+                if isEditingName {
+                    TextField("", text: $editingName)
+                        .font(.system(size: 13, weight: .light))
+                        .foregroundColor(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .focused($nameFieldFocused)
+                        .submitLabel(.done)
+                        .onSubmit { commitEditName() }
+                        .overlay(
+                            Group {
+                                if editingName.isEmpty {
+                                    Text("Roll \(String(format: "%02d", roll.number))")
+                                        .font(.system(size: 13, weight: .light))
+                                        .foregroundColor(.white.opacity(0.25))
+                                        .allowsHitTesting(false)
+                                }
+                            }
+                        )
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: "#C8762A").opacity(0.4), lineWidth: 1))
+                } else {
+                    Button(action: {
+                        editingName = roll.customName ?? ""
+                        withAnimation(.easeInOut(duration: 0.15)) { isEditingName = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { nameFieldFocused = true }
+                    }) {
+                        HStack(spacing: 4) {
+                            Text(displayName)
+                                .font(.system(size: 13, weight: .light))
+                                .foregroundColor(roll.customName?.isEmpty == false ? .white.opacity(0.75) : .white.opacity(0.4))
+                                .lineLimit(1)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 9))
+                                .foregroundColor(Color(hex: "#C8762A").opacity(0.4))
+                        }
+                    }
+                }
+
                 Text(roll.dateRangeLabel)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.4))
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.35))
             }
 
             Spacer()
 
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isSelecting.toggle()
-                    if !isSelecting { selectedFrames = [] }
+            HStack(spacing: 8) {
+                if isSelecting && !selectedFrames.isEmpty {
+                    Button(action: { showSaveSheet = true }) {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(hex: "#C8762A").opacity(0.8))
+                    }
+                    .transition(.scale.combined(with: .opacity))
+
+                    Button(action: { showDeleteConfirm = true }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(hex: "#C8762A").opacity(0.8))
+                    }
+                    .transition(.scale.combined(with: .opacity))
                 }
-            }) {
-                Image(systemName: isSelecting ? "checkmark.circle.fill" : "checkmark.circle")
-                    .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "#C8762A").opacity(0.8))
+
+                Button(action: {
+                    if isEditingName {
+                        commitEditName()
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isSelecting.toggle()
+                            if !isSelecting { selectedFrames = [] }
+                        }
+                    }
+                }) {
+                    Image(systemName: isEditingName ? "checkmark.circle.fill" : (isSelecting ? "checkmark.circle.fill" : "checkmark.circle"))
+                        .font(.system(size: 18))
+                        .foregroundColor(isEditingName ? Color(hex: "#C8762A") : Color(hex: "#C8762A").opacity(0.8))
+                }
             }
         }
         .padding(.horizontal, 20)
@@ -794,19 +842,78 @@ struct SaveOptionsSheet: View {
 
     // MARK: - Save Logic
 
+    /// 임시 파일 경로 + 메타데이터 (imageData를 메모리에 보관하지 않음)
+    private struct FrameFileRef {
+        let fileURL: URL
+        let capturedAt: Date
+        let memo: String
+    }
+
     private func performSave() {
         isSaving = true
-        Task {
+
+        // 1단계: imageData를 임시 파일로 내보내고 메모리에서 해제
+        //   SwiftData는 imageData 접근 시 fault-in하므로, 파일로 쓴 뒤 참조를 끊으면
+        //   SwiftData가 내부 캐시를 정리할 수 있음
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("filmroll_export_\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        var fileRefs: [FrameFileRef] = []
+        for (i, frame) in frames.enumerated() {
+            autoreleasepool {
+                guard let data = frame.imageData else { return }
+                let fileURL = tempDir.appendingPathComponent("frame_\(i).jpg")
+                try? data.write(to: fileURL)
+                fileRefs.append(FrameFileRef(fileURL: fileURL, capturedAt: frame.capturedAt, memo: frame.memo))
+            }
+        }
+
+        let filmStock = roll.filmStock
+        let localShowDate = showDate
+        let localShowFilmName = showFilmName
+        let localShowPerforation = showPerforation
+        let localShowMemo = showMemo
+        let localSaveAsStrip = saveAsStrip
+        let localCanSaveAsStrip = canSaveAsStrip
+
+        Task.detached(priority: .userInitiated) {
+            defer {
+                // 임시 파일 정리
+                try? FileManager.default.removeItem(at: tempDir)
+            }
+
             let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
             guard status == .authorized || status == .limited else {
                 await MainActor.run { isSaving = false; showPermissionAlert = true }
                 return
             }
-            if saveAsStrip && canSaveAsStrip {
-                if let img = renderStrip() { await saveToPhotos(img) }
+            if localSaveAsStrip && localCanSaveAsStrip {
+                // 스트립: 최대 6장씩 분할하여 메모리 관리
+                let chunks = fileRefs.chunked(into: 6)
+                for chunk in chunks {
+                    autoreleasepool {
+                        if let img = Self.renderStripCG(
+                            refs: chunk, filmStock: filmStock,
+                            showDate: localShowDate, showFilmName: localShowFilmName,
+                            showPerforation: localShowPerforation, showMemo: localShowMemo
+                        ) {
+                            Self.saveToPhotosSync(img)
+                        }
+                    }
+                }
             } else {
-                for frame in frames {
-                    if let img = renderSingleFrame(frame) { await saveToPhotos(img) }
+                // 단일: 한 장씩 URL에서 다운샘플 → 렌더 → 저장 → 메모리 해제
+                for ref in fileRefs {
+                    autoreleasepool {
+                        if let img = Self.renderSingleFrameCG(
+                            ref: ref, filmStock: filmStock,
+                            showDate: localShowDate, showFilmName: localShowFilmName,
+                            showPerforation: localShowPerforation, showMemo: localShowMemo
+                        ) {
+                            Self.saveToPhotosSync(img)
+                        }
+                    }
                 }
             }
             await MainActor.run {
@@ -820,248 +927,233 @@ struct SaveOptionsSheet: View {
         }
     }
 
-    private func saveToPhotos(_ image: UIImage) async {
-        await withCheckedContinuation { cont in
-            PHPhotoLibrary.shared().performChanges({
-                PHAssetChangeRequest.creationRequestForAsset(from: image)
-            }) { _, _ in cont.resume() }
-        }
+    private static func saveToPhotosSync(_ image: UIImage) {
+        let semaphore = DispatchSemaphore(value: 0)
+        PHPhotoLibrary.shared().performChanges({
+            PHAssetChangeRequest.creationRequestForAsset(from: image)
+        }) { _, _ in semaphore.signal() }
+        semaphore.wait()
     }
 
-    // MARK: - Single Frame Export
+    // MARK: - Downsampled Image Loading (메모리 효율적)
 
-    private func renderSingleFrame(_ frame: Frame) -> UIImage? {
-        guard let data = frame.imageData, let img = UIImage(data: data) else { return nil }
+    /// URL에서 직접 디코딩 — Data를 메모리에 올리지 않고 CGImageSource가 파일을 직접 읽음
+    private static func downsampledImage(url: URL, maxPixelWidth: CGFloat) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceShouldCache: false
+        ]
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, options as CFDictionary) else { return nil }
+
+        let downsampleOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelWidth
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, downsampleOptions as CFDictionary) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+
+    // MARK: - Single Frame Export (CGContext)
+
+    private static func renderSingleFrameCG(
+        ref: FrameFileRef, filmStock: FilmStock,
+        showDate: Bool, showFilmName: Bool,
+        showPerforation: Bool, showMemo: Bool
+    ) -> UIImage? {
+        // 출력에 필요한 만큼만 디코딩 (2400px) — 원본 4032px 전체 로드 방지
+        let scale: CGFloat = 2.0
         let exportW: CGFloat = 1200
+        let targetPixelW = exportW * scale
+        guard let img = downsampledImage(url: ref.fileURL, maxPixelWidth: targetPixelW) else { return nil }
         let perfH: CGFloat = showPerforation ? 44 : 0
         let imageH: CGFloat = exportW * 3.0 / 4.0
         let exportH: CGFloat = perfH + imageH + perfH
 
-        let renderer = ImageRenderer(
-            content: SingleFrameExportView(
-                image: img, frame: frame, roll: roll,
-                showDate: showDate, showFilmName: showFilmName,
-                showPerforation: showPerforation, showMemo: showMemo,
-                exportW: exportW, exportH: exportH, perfH: perfH
-            )
-            .frame(width: exportW, height: exportH)
-            .environment(\.colorScheme, .dark)
-        )
-        renderer.scale = 3.0
-        renderer.proposedSize = ProposedViewSize(width: exportW, height: exportH)
-        return renderer.uiImage
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: exportW, height: exportH), format: format)
+
+        return renderer.image { ctx in
+            let gc = ctx.cgContext
+            // 배경
+            UIColor(red: 0.102, green: 0.063, blue: 0.024, alpha: 1).setFill() // #1A1005
+            gc.fill(CGRect(x: 0, y: 0, width: exportW, height: exportH))
+
+            var y: CGFloat = 0
+
+            // 상단 퍼포레이션
+            if showPerforation {
+                drawPerforation(in: gc, rect: CGRect(x: 0, y: y, width: exportW, height: perfH))
+                y += perfH
+            }
+
+            // 사진
+            img.draw(in: CGRect(x: 0, y: y, width: exportW, height: imageH))
+
+            // 스탬프 텍스트
+            let stampColor = UIColor(red: 0.91, green: 0.40, blue: 0.04, alpha: 1.0) // #E8670A
+
+            if showFilmName {
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.monospacedSystemFont(ofSize: exportW * 0.018, weight: .semibold),
+                    .foregroundColor: stampColor
+                ]
+                let name = filmStock.name.uppercased() as NSString
+                name.draw(at: CGPoint(x: 16, y: y + imageH - 30), withAttributes: attrs)
+            }
+
+            if showDate {
+                let dateAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.monospacedSystemFont(ofSize: exportW * 0.022, weight: .semibold),
+                    .foregroundColor: stampColor
+                ]
+                let timeAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.monospacedSystemFont(ofSize: exportW * 0.017, weight: .regular),
+                    .foregroundColor: stampColor.withAlphaComponent(0.75)
+                ]
+                let dateStr = ref.capturedAt.stampDate as NSString
+                let timeStr = ref.capturedAt.stampTime as NSString
+                let dateSize = dateStr.size(withAttributes: dateAttrs)
+                let timeSize = timeStr.size(withAttributes: timeAttrs)
+                dateStr.draw(at: CGPoint(x: exportW - dateSize.width - 16, y: y + imageH - dateSize.height - timeSize.height - 12), withAttributes: dateAttrs)
+                timeStr.draw(at: CGPoint(x: exportW - timeSize.width - 16, y: y + imageH - timeSize.height - 8), withAttributes: timeAttrs)
+            }
+
+            y += imageH
+
+            // 하단 퍼포레이션 + 메모
+            if showPerforation {
+                drawPerforation(in: gc, rect: CGRect(x: 0, y: y, width: exportW, height: perfH))
+                if showMemo && !ref.memo.isEmpty {
+                    let memoAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+                        .foregroundColor: UIColor.white.withAlphaComponent(0.3)
+                    ]
+                    let memoStr = ref.memo as NSString
+                    let memoSize = memoStr.size(withAttributes: memoAttrs)
+                    memoStr.draw(at: CGPoint(x: exportW - memoSize.width - 16, y: y + (perfH - memoSize.height) / 2), withAttributes: memoAttrs)
+                }
+            }
+        }
     }
 
-    // MARK: - Strip Export
+    // MARK: - Strip Export (CGContext)
 
-    private func renderStrip() -> UIImage? {
+    private static func renderStripCG(
+        refs: [FrameFileRef], filmStock: FilmStock,
+        showDate: Bool, showFilmName: Bool,
+        showPerforation: Bool, showMemo: Bool
+    ) -> UIImage? {
+        let scale: CGFloat = 2.0
         let frameW: CGFloat = 400
         let frameH: CGFloat = 300
         let perfH: CGFloat = showPerforation ? 44 : 0
         let gap: CGFloat = 3
-        let totalW: CGFloat = frameW * CGFloat(frames.count) + gap * CGFloat(frames.count - 1)
+        let totalW: CGFloat = frameW * CGFloat(refs.count) + gap * CGFloat(max(0, refs.count - 1))
         let totalH: CGFloat = perfH + frameH + perfH
 
-        let renderer = ImageRenderer(
-            content: StripExportView(
-                frames: frames, roll: roll,
-                showDate: showDate, showFilmName: showFilmName,
-                showPerforation: showPerforation, showMemo: showMemo,
-                frameW: frameW, frameH: frameH, perfH: perfH, gap: gap
-            )
-            .frame(width: totalW, height: totalH)
-            .environment(\.colorScheme, .dark)
-        )
-        renderer.scale = 3.0
-        renderer.proposedSize = ProposedViewSize(width: totalW, height: totalH)
-        return renderer.uiImage
-    }
-}
+        // 장수가 많을수록 각 프레임 디코딩 해상도를 낮춰 메모리 절약
+        let count = refs.count
+        let maxPixelW: CGFloat
+        switch count {
+        case ...6:   maxPixelW = 800   // 1-6장: 원본 품질
+        case 7...12: maxPixelW = 600   // 7-12장
+        case 13...18: maxPixelW = 450  // 13-18장
+        default:     maxPixelW = 320   // 19장 이상
+        }
 
-// MARK: - Single Frame Export View
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: totalW, height: totalH), format: format)
 
-private struct SingleFrameExportView: View {
-    let image: UIImage
-    let frame: Frame
-    let roll: Roll
-    let showDate: Bool
-    let showFilmName: Bool
-    let showPerforation: Bool
-    let showMemo: Bool
-    let exportW: CGFloat
-    let exportH: CGFloat
-    let perfH: CGFloat
+        return renderer.image { ctx in
+            let gc = ctx.cgContext
+            // 배경
+            UIColor(red: 0.102, green: 0.063, blue: 0.024, alpha: 1).setFill()
+            gc.fill(CGRect(x: 0, y: 0, width: totalW, height: totalH))
 
-    var body: some View {
-        VStack(spacing: 0) {
             // 상단 퍼포레이션
             if showPerforation {
-                exportPerforationRow(memo: nil)
+                drawPerforation(in: gc, rect: CGRect(x: 0, y: 0, width: totalW, height: perfH))
             }
 
-            // 사진 영역
-            ZStack(alignment: .bottom) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
+            let stampColor = UIColor(red: 0.91, green: 0.40, blue: 0.04, alpha: 1.0)
 
-                // 날짜 (오른쪽 아래) + 필름이름 (왼쪽 아래)
-                HStack(alignment: .bottom) {
-                    // 필름 이름 왼쪽
-                    if showFilmName {
-                        Text(roll.filmStock.name.uppercased())
-                            .font(.system(size: exportW * 0.018, weight: .semibold, design: .monospaced))
-                            .foregroundColor(Color(hex: "#E8670A"))
-                    }
-                    Spacer()
-                    // 날짜 오른쪽
-                    if showDate {
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(frame.capturedAt.stampDate)
-                                .font(.system(size: exportW * 0.022, weight: .semibold, design: .monospaced))
-                            Text(frame.capturedAt.stampTime)
-                                .font(.system(size: exportW * 0.017, design: .monospaced))
-                                .opacity(0.75)
-                        }
-                        .foregroundColor(Color(hex: "#E8670A"))
-                    }
+            for (i, ref) in refs.enumerated() {
+                let x = CGFloat(i) * (frameW + gap)
+                let y = perfH
+
+                // 장수에 따라 조정된 해상도로 디코딩
+                if let img = downsampledImage(url: ref.fileURL, maxPixelWidth: maxPixelW) {
+                    img.draw(in: CGRect(x: x, y: y, width: frameW, height: frameH))
                 }
-                .padding(16)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: exportW * 3.0 / 4.0)
 
-            // 하단 퍼포레이션 (메모 포함)
+                if showFilmName {
+                    let attrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.monospacedSystemFont(ofSize: frameW * 0.038, weight: .semibold),
+                        .foregroundColor: stampColor
+                    ]
+                    let name = filmStock.name.uppercased() as NSString
+                    name.draw(at: CGPoint(x: x + 8, y: y + frameH - 22), withAttributes: attrs)
+                }
+
+                if showDate {
+                    let dateAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.monospacedSystemFont(ofSize: frameW * 0.038, weight: .semibold),
+                        .foregroundColor: stampColor
+                    ]
+                    let timeAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.monospacedSystemFont(ofSize: frameW * 0.03, weight: .regular),
+                        .foregroundColor: stampColor.withAlphaComponent(0.75)
+                    ]
+                    let dateStr = ref.capturedAt.stampDate as NSString
+                    let timeStr = ref.capturedAt.stampTime as NSString
+                    let dateSize = dateStr.size(withAttributes: dateAttrs)
+                    let timeSize = timeStr.size(withAttributes: timeAttrs)
+                    dateStr.draw(at: CGPoint(x: x + frameW - dateSize.width - 8, y: y + frameH - dateSize.height - timeSize.height - 6), withAttributes: dateAttrs)
+                    timeStr.draw(at: CGPoint(x: x + frameW - timeSize.width - 8, y: y + frameH - timeSize.height - 4), withAttributes: timeAttrs)
+                }
+            }
+
+            // 하단 퍼포레이션 + 메모
             if showPerforation {
-                exportPerforationRow(memo: showMemo ? frame.memo : nil)
+                let bottomY = perfH + frameH
+                drawPerforation(in: gc, rect: CGRect(x: 0, y: bottomY, width: totalW, height: perfH))
+                if showMemo, let firstMemo = refs.first?.memo, !firstMemo.isEmpty {
+                    let memoAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+                        .foregroundColor: UIColor.white.withAlphaComponent(0.3)
+                    ]
+                    let memoStr = firstMemo as NSString
+                    let memoSize = memoStr.size(withAttributes: memoAttrs)
+                    memoStr.draw(at: CGPoint(x: totalW - memoSize.width - 16, y: bottomY + (perfH - memoSize.height) / 2), withAttributes: memoAttrs)
+                }
             }
         }
-        .background(Color(hex: "#1A1005"))
     }
 
-    private func exportPerforationRow(memo: String?) -> some View {
-        ZStack {
-            Color(hex: "#1A1005")
-            // 퍼포레이션 구멍들
-            HStack(spacing: 10) {
-                ForEach(0..<28, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(hex: "#0D0906"))
-                        .frame(width: 22, height: 14)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
+    // MARK: - Perforation Drawing Helper
 
-            // 메모
-            if let memo, !memo.isEmpty {
-                HStack {
-                    Spacer()
-                    Text(memo)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.3))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .padding(.trailing, 16)
-                }
-            }
+    private static func drawPerforation(in gc: CGContext, rect: CGRect) {
+        // 배경은 이미 #1A1005로 칠해짐
+        let holeW: CGFloat = 22
+        let holeH: CGFloat = 14
+        let spacing: CGFloat = 10
+        let holeColor = UIColor(red: 0.051, green: 0.035, blue: 0.024, alpha: 1) // #0D0906
+        let totalSlot = holeW + spacing
+        let count = Int(rect.width / totalSlot)
+        let startX = rect.minX + (rect.width - CGFloat(count) * totalSlot + spacing) / 2
+
+        holeColor.setFill()
+        for i in 0..<count {
+            let x = startX + CGFloat(i) * totalSlot
+            let y = rect.minY + (rect.height - holeH) / 2
+            let holePath = UIBezierPath(roundedRect: CGRect(x: x, y: y, width: holeW, height: holeH), cornerRadius: 3)
+            holePath.fill()
         }
-        .frame(height: perfH)
-    }
-}
-
-// MARK: - Strip Export View
-
-private struct StripExportView: View {
-    let frames: [Frame]
-    let roll: Roll
-    let showDate: Bool
-    let showFilmName: Bool
-    let showPerforation: Bool
-    let showMemo: Bool
-    let frameW: CGFloat
-    let frameH: CGFloat
-    let perfH: CGFloat
-    let gap: CGFloat
-
-    var body: some View {
-        VStack(spacing: 0) {
-            if showPerforation {
-                stripPerforationRow(memo: nil)
-            }
-
-            HStack(spacing: gap) {
-                ForEach(frames) { frame in
-                    ZStack(alignment: .bottom) {
-                        if let data = frame.imageData, let img = UIImage(data: data) {
-                            Image(uiImage: img)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: frameW, height: frameH)
-                                .clipped()
-                        } else {
-                            Color(hex: "#2B1E0F").frame(width: frameW, height: frameH)
-                        }
-
-                        HStack(alignment: .bottom) {
-                            if showFilmName {
-                                Text(roll.filmStock.name.uppercased())
-                                    .font(.system(size: frameW * 0.038, weight: .semibold, design: .monospaced))
-                                    .foregroundColor(Color(hex: "#E8670A"))
-                            }
-                            Spacer()
-                            if showDate {
-                                VStack(alignment: .trailing, spacing: 1) {
-                                    Text(frame.capturedAt.stampDate)
-                                        .font(.system(size: frameW * 0.038, weight: .semibold, design: .monospaced))
-                                    Text(frame.capturedAt.stampTime)
-                                        .font(.system(size: frameW * 0.03, design: .monospaced))
-                                        .opacity(0.75)
-                                }
-                                .foregroundColor(Color(hex: "#E8670A"))
-                            }
-                        }
-                        .padding(8)
-                    }
-                    .frame(width: frameW, height: frameH)
-                }
-            }
-            .background(Color(hex: "#1A1005"))
-
-            if showPerforation {
-                stripPerforationRow(memo: showMemo ? frames.first?.memo : nil)
-            }
-        }
-        .background(Color(hex: "#1A1005"))
-    }
-
-    private func stripPerforationRow(memo: String?) -> some View {
-        let holeCount = max(frames.count * 5, 8)
-        return ZStack {
-            Color(hex: "#1A1005")
-            HStack(spacing: 10) {
-                ForEach(0..<holeCount, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(hex: "#0D0906"))
-                        .frame(width: 22, height: 14)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-
-            if let memo, !memo.isEmpty {
-                HStack {
-                    Spacer()
-                    Text(memo)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.3))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .padding(.trailing, 16)
-                }
-            }
-        }
-        .frame(height: perfH)
     }
 }
 

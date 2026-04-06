@@ -2,11 +2,17 @@ import SwiftUI
 
 struct RollCompleteView: View {
     let rollNumber: Int
+    let rollName: String?
     let filmName: String
     let frameCount: Int
     let filmStock: FilmStock
     let onDismiss: () -> Void
     let onGoHome: () -> Void
+
+    private var displayTitle: String {
+        if let name = rollName, !name.isEmpty { return name }
+        return "ROLL \(String(format: "%02d", rollNumber))"
+    }
 
     @State private var opacity: Double = 0
     @State private var canisterScale: CGFloat = 0.7
@@ -58,7 +64,7 @@ struct RollCompleteView: View {
                 .shadow(color: filmStock.dimmedCanisterColor.opacity(0.4), radius: 20, x: 0, y: 8)
 
                 VStack(spacing: 8) {
-                    Text("ROLL \(String(format: "%02d", rollNumber))  ·  \(filmName.uppercased())")
+                    Text("\(displayTitle)  ·  \(filmName.uppercased())")
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(Color(hex: "#C8762A").opacity(0.7))
                         .tracking(3)
